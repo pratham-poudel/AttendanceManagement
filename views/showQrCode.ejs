@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance QR Code - AntiProxy</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --secondary: #4f46e5;
+            --dark: #1e1b4b;
+            --light: #eef2ff;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: linear-gradient(135deg, var(--light) 0%, #fff 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            padding: 2rem 0;
+        }
+
+        .qr-container {
+            background: white;
+            border-radius: 24px;
+            padding: 3rem;
+            text-align: center;
+            box-shadow: 
+                0 0 0 1px rgba(0, 0, 0, 0.05),
+                0 20px 40px -20px rgba(0, 0, 0, 0.15),
+                0 40px 60px -30px rgba(99, 102, 241, 0.25);
+        }
+
+        .qr-header {
+            margin-bottom: 2rem;
+        }
+
+        .qr-title {
+            color: var(--dark);
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .qr-subtitle {
+            color: #6b7280;
+            font-size: 1rem;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .qr-code-wrapper {
+            background: var(--light);
+            padding: 2rem;
+            border-radius: 16px;
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .qr-code {
+            max-width: 300px;
+            height: auto;
+            border-radius: 12px;
+            transition: transform 0.3s ease;
+        }
+
+        .qr-code:hover {
+            transform: scale(1.02);
+        }
+
+        .timer {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin: 1rem 0;
+            text-shadow: 0 2px 4px rgba(99, 102, 241, 0.1);
+        }
+
+        .timer.expired {
+            color: #ef4444;
+        }
+
+        .btn-custom {
+            background: var(--primary);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            border: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            min-width: 160px;
+        }
+
+        .btn-custom:hover {
+            background: var(--secondary);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px -8px var(--primary);
+            color: white;
+        }
+
+        .expires-text {
+            color: #6b7280;
+            font-size: 0.875rem;
+            margin-top: 1.5rem;
+            padding: 0.75rem;
+            background: rgba(99, 102, 241, 0.1);
+            border-radius: 8px;
+            display: inline-block;
+        }
+
+        .pulse {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 70%);
+            animation: pulse 2s infinite;
+            pointer-events: none;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: translate(-50%, -50%) scale(0.95);
+                opacity: 0.5;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.3;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(0.95);
+                opacity: 0.5;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .qr-container {
+                padding: 2rem;
+                margin: 1rem;
+            }
+
+            .qr-title {
+                font-size: 1.75rem;
+            }
+
+            .btn-custom {
+                width: 100%;
+                margin-bottom: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <div class="qr-container">
+                    <div class="qr-header">
+                        <h1 class="qr-title"><%= sheetName %></h1>
+                        <p class="qr-subtitle">Have students scan this QR code using their mobile devices to mark attendance</p>
+                    </div>
+                    <div class="qr-code-wrapper">
+                        <div class="pulse"></div>
+                        <img src="<%= qrCodeDataUrl %>" alt="QR Code" class="qr-code mb-3">
+                        <div class="timer" id="timer">
+                            <i class="bi bi-clock me-2"></i>
+                            <span>20:00</span>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-3 justify-content-center flex-wrap">
+                        <button class="btn btn-custom" onclick="downloadQR()">
+                            <i class="bi bi-download me-2"></i>Download QR
+                        </button>
+                        <button class="btn btn-custom" onclick="window.location.href='/teachers/profile'">
+                            <i class="bi bi-arrow-left me-2"></i>Back to Dashboard
+                        </button>
+                    </div>
+                    <p class="expires-text">
+                        <i class="bi bi-clock-history me-2"></i>
+                        This QR code will expire in <%= expiresIn %> minutes
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <script>
+        // Timer functionality
+        function startTimer(duration) {
+            let timer = duration;
+            const timerDisplay = document.getElementById('timer');
+            
+            const interval = setInterval(function () {
+                const minutes = parseInt(timer / 60, 10);
+                const seconds = parseInt(timer % 60, 10);
+
+                timerDisplay.textContent = minutes.toString().padStart(2, '0') + ':' + 
+                                        seconds.toString().padStart(2, '0');
+
+                if (--timer < 0) {
+                    clearInterval(interval);
+                    timerDisplay.textContent = 'EXPIRED';
+                    timerDisplay.style.color = '#ef4444';
+                }
+            }, 1000);
+        }
+
+        // Start 20-minute countdown
+        startTimer(<%= expiresIn %> * 60);
+
+        // Download QR function
+        function downloadQR() {
+            // Create a temporary link
+            const link = document.createElement('a');
+            link.href = '<%= qrCodeDataUrl %>';
+            link.download = 'attendance-qr.png';
+            
+            // Fetch the image and convert to blob
+            fetch(link.href)
+                .then(res => res.blob())
+                .then(blob => {
+                    const blobUrl = URL.createObjectURL(blob);
+                    link.href = blobUrl;
+                    link.click();
+                    URL.revokeObjectURL(blobUrl);
+                })
+                .catch(err => console.error('Error downloading QR:', err));
+        }
+    </script>
+</body>
+</html> 
