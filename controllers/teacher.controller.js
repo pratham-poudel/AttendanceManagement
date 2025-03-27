@@ -89,9 +89,9 @@ module.exports.createAttendanceForm = async (req, res) => {
             "SELECT teacher_id FROM teacher WHERE email = ?",
             [email]
         );
-        await db.execute(`
-            SET time_zone = 'Asia/Kolkata';
-        `);
+        // await db.execute(`
+        //     SET time_zone = 'Asia/Kolkata';
+        // `);
 
         // Insert into AttendanceSheet
         const [result] = await db.execute(
